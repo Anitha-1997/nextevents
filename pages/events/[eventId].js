@@ -1,13 +1,13 @@
 import EventContent from "@/components/event-detail/event-content";
 import EventLogistics from "@/components/event-detail/event-logistics";
 import EventSummary from "@/components/event-detail/event-summary";
+import Comments from "@/components/input/comments";
 import ErrorAlert from "@/components/ui/error-alert";
-import { getEventById } from "@/dummy-data";
-import { useRouter } from "next/router";
+import { getEventById, getAllEvents } from "@/helpers/api-util";
+import Head from "next/head";
 
-export default function EventDetailPage() {
-  const router = useRouter();
-  const event = getEventById(router.query.eventId);
+export default function EventDetailPage(props) {
+  const { event } = props;
 
   if (!event)
     return (
@@ -17,6 +17,10 @@ export default function EventDetailPage() {
     );
   return (
     <>
+      <Head>
+        <title>{event.title}</title>
+        <meta name="description" content={event.description} />
+      </Head>
       <EventSummary title={event.title} />
       <EventLogistics
         date={event.date}
@@ -26,7 +30,27 @@ export default function EventDetailPage() {
       />
       <EventContent>
         <p>{event.description}</p>
+        <Comments eventId={event.id} />
       </EventContent>
     </>
   );
+}
+
+export async function getStaticProps(context) {
+  const { params } = context;
+  const event = await getEventById(params.eventId);
+  return {
+    props: { event: event },
+  };
+}
+
+export async function getStaticPaths() {
+  const allEvents = await getAllEvents();
+  const paramArray = allEvents.map((param) => ({
+    params: { eventId: param.id },
+  }));
+  return {
+    paths: paramArray,
+    fallback: "blocking",
+  };
 }
